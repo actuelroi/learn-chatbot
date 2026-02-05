@@ -22,6 +22,39 @@ const page = () => {
     }
 
     const handleImportSource = async (data:any)=>{
+        setKnowledgeStoringLoader(true)
+        try{
+            let response;
+            if(data.type === "upload" && data.file){
+                const formData = new FormData();
+                formData.append('type', "upload");
+                formData.append('file', data.file)
+                response = await fetch('/api/knowledge/store',{
+                    method: "POST",
+                    body: formData
+                })
+            }else{
+                response = await fetch("/api/knowledge/store",
+                   {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json"},
+                    body: JSON.stringify(data)
+                   }
+                )
+            }
+            if(!response.ok){
+                throw new Error('Failed to store source')
+            }
+
+            const res = await fetch("/api/knowledge/fetch");
+            const newData = await res.json();
+            setKnowledgeSources(newData.sources)
+            setIsAddOpen(false)
+        }catch (error){
+             console.log(error)
+        }finally{
+            setKnowledgeStoringLoader(false)
+        }
 
     }
 

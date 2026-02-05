@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { user as User} from '@/db/schema'
 import { eq } from "drizzle-orm";
-import { use } from "react";
+
 
 export async function GET(req: NextRequest) {
 
