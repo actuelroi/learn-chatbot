@@ -1,25 +1,41 @@
 "use client"
 
 import AddKnowledge from '@/components/knowledge/Addknowledge'
+import KnowledgeTable from '@/components/knowledge/KnowlegdeTable'
 import QuickActions from '@/components/knowledge/QuickActions'
+import SourceDetailsSheet from '@/components/knowledge/SourceDetailsSheet'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 
 const page = () => {
 
     const [defaultTab, setDefaultTab] = useState("website")
     const [isAddOpen, setIsAddOpen] = useState(false)
+    const [isSheetOpen, setIsSheetOpen] = useState(false)
     const [knowledgeStoringLoader, setKnowledgeStoringLoader] = useState(false)
+    const [knowledgeSourcesLoader, setKnowledgeSourcesLoader] = useState(true)
 
     const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([])
+    const [selectedSource, setSelectedSource] = useState<KnowledgeSource | null>(null)
 
 
     const openModal = (tab: string) => {
         setDefaultTab(tab)
         setIsAddOpen(true)
     }
+
+useEffect(()=> {
+    const fetchSources = async ()=>{
+        const res = await fetch('/api/knowledge/fetch');
+        const data = await res.json();
+        setKnowledgeSources(data.sources);
+        setKnowledgeSourcesLoader(false)
+    }
+    fetchSources();
+},[])
+
 
     const handleImportSource = async (data:any)=>{
         setKnowledgeStoringLoader(true)
@@ -59,6 +75,14 @@ const page = () => {
     }
 
 
+    const handleSourceClick = (source: KnowledgeSource)=>{
+        setSelectedSource(source);
+        setIsSheetOpen(true);
+
+
+    }
+
+
 
 
     return (
@@ -81,6 +105,16 @@ const page = () => {
                 </div>
             </div>
             <QuickActions onOpenModal={openModal} />
+
+                  
+                  <KnowledgeTable 
+                  sources={knowledgeSources}
+                  onSourceClick= {handleSourceClick}
+                  isLoading= {knowledgeSourcesLoader}
+                  
+                  />
+
+
              <AddKnowledge 
              isOpen={isAddOpen}
              setIsOpen={setIsAddOpen}
@@ -90,6 +124,13 @@ const page = () => {
              isLoading={knowledgeStoringLoader}
              existingSources={knowledgeSources}
              />
+
+             <SourceDetailsSheet
+              isOpen={isSheetOpen}
+              setIsOpen={setIsSheetOpen}
+              selectedSource={selectedSource}
+             />
+             
         </div>
     )
 }

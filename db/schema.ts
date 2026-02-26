@@ -20,3 +20,15 @@ export const metadata = pgTable("metadata",{
   external_links : text('external_links'),
   created_at: text('created_at').default(sql`now()`)
 })
+
+export const knowledge_source = pgTable("knowledge_source",{
+     id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+    user_email: text("user_email").notNull(),
+    type: text('type').notNull(),
+    name: text('name').notNull(),
+    status: text('status').notNull().default('active'),
+    content: text('content'),
+    source_url: text('source_url'),
+    metadata : text('meta_data'),
+    created_at: text('created_at').default(sql`now()`),
+})

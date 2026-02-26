@@ -26,7 +26,7 @@ const SIDEBAR_ITEMS = [
   },
   {
     label: "Chatbot",
-    href: "/dashboard/charbot",
+    href: "/dashboard/chatbot",
     icon: Bot
   },
   {

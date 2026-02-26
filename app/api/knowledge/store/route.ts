@@ -1,3 +1,5 @@
+import db from "@/db/client";
+import { knowledge_source } from "@/db/schema";
 import { isAuthorized } from "@/lib/isAuthorized";
 import { summarizeMarkdown } from "@/lib/openAi";
 import { NextRequest, NextResponse } from "next/server";
@@ -44,11 +46,37 @@ export async function POST(req: NextRequest) {
 
                 const markdown = await summarizeMarkdown(fileContent)
                 formattedContent = markdown
+
+                 await db.insert(knowledge_source).values({
+                user_email: user.email,
+                type:'upload',
+                name: file.name,
+                content: formattedContent,
+              
+                status: "active",
+                 metadata: JSON.stringify(
+                {
+                    fileSize: file.size,
+                    rowCount:lines.length,
+                    headers: headers,
+                }
+                )
+
+            })
+
+            return NextResponse.json({
+                message: 'File uploaded successfully'
+            },{
+                status: 200
+            })
+
             }else{
                 body = await req.json();
                 type = body.type;
                 
             }
+
+            
 
             if(type === "website"){
                 const zenUrl=  new URL("https//api.zenrows.com/v1/")
@@ -57,9 +85,73 @@ export async function POST(req: NextRequest) {
                 zenUrl.searchParams.set('url', body.url);
                 zenUrl.searchParams.set('response_type', "markdown");
 
-                //const res = await fetch()
+                const res = await fetch(zenUrl.toString(),{
+                    headers:{
+                        'User-Agent':'OneMinuteSupport/1.0',
+
+                    }
+                }
+                )
+                 const html = await res.text();
+                 
+                 if(!res.text){
+                    return NextResponse.json(
+                        {
+                      error: 'ZenRows request failed',
+                      status: res.status,
+                      body: html.slice(0,500),
+
+                    },
+                {status: 502}
+                 
+                );
+                 }
+                 const markdown = await summarizeMarkdown(html)
+                 console.log(markdown);
+
+
+                  await db.insert(knowledge_source).values({
+                user_email: user.email,
+                type:'website',
+                name: body.url || "Unnamed Source",
+                content: body.content || "",
+                source_url: body.url || "",
+                status: "active",
+
+            })
             }
+
+           
+
+            else if (type === 'text'){
+            let content = body.content ;
+            
+            
+            if(content.length > 3000){
+                const markdown = await summarizeMarkdown(content)
+
+                 await db.insert(knowledge_source).values({
+                user_email: user.email,
+                type:'text',
+                name: body.tile || "Unnamed Source",
+                content: markdown || "",
+                status: "active",
+               
+
+            })
         }
+    }
+            
+            
+
+            
+        }
+
+        
+
+        return NextResponse.json({
+            message:'Source added successfully'
+        }, {status: 200})
 
     } catch (error) {
 
