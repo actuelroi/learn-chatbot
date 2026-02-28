@@ -22,7 +22,7 @@ const layout = async ({ children }:{children:React.ReactNode}) => {
                     <>
                         <Sidebar/>
                         <div className='flex flex-col md:ml-64 relative min-h-screen transition-all duration-300'>
-                            <Header/>
+                            {/* <Header/> */}
                             <main className='flex-1'>
                                 {children}
                             </main>

@@ -15,3 +15,15 @@ interface KnowledgeSource {
     create_at: string | null;
 
 }
+
+type Tone = "strict" | "neutral" | "friendly" | "empathetic";
+
+
+interface SectionFormData {
+  name: string;
+  description:string;
+  tone:Tone;
+  allowedTopics: string;
+  blockedTopics: string;
+  fallbackBehavior: string;
+}
