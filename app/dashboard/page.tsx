@@ -1,45 +1,47 @@
-"use client"
 
+'use client'
+import  {useEffect } from 'react'
 
-import InitialForm from "@/components/dashboard/InitialForm"
-import { useEffect, useState } from "react"
+import { useState } from 'react';
+import DashboardOverView from '@/components/settings/DashboardOverView';
+import InitialForm from '@/components/dashboard/InitialForm';
 
+const Page = () => {
 
+    const [isMetaDataAvailable, setIsMetaDataAvailable] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    
+    useEffect(() => {
+        const fetchMetaData = async () => {
+            const response = await fetch("/api/metadata/fetch");
+            const data = await response.json();
+            setIsMetaDataAvailable(data.exists);
+            setIsLoading(false);
+        };
+        fetchMetaData();
+    }, []);
 
-const page = () => {
-  const [isMetaDataAvailable, setIsMetaDataAvailable] = useState(false)
-  const [isLoading, setIsLoading]= useState(true)
-
-  useEffect(()=>{
-    const fetchMetadata = async()=>{
-       const response = await fetch('/api/metadata/fetch')
-
-       const data = await response.json()
-       setIsMetaDataAvailable(data.exists)
-       setIsLoading(false)
+    if(isLoading){
+        return(
+            <div className='flex-1 flex w-full items-center justify-center p-4'/>
+        )
     }
-    fetchMetadata();
-  },[])
-
-  if(isLoading){
-    return(
-      <div className="flex-1 flex w-full items-center justify-center p-4"/>    
-   
-    )
-  }
-
   return (
-    <div className="flex-1 flex w-full">
+    <div className='flex-1 w-full'>
       {!isMetaDataAvailable ? (
-        <div className="w-full flex items-center justify-center p-4 min-h-screen">
-               <InitialForm />
-        </div>
-      ): (
-        <></>
-      )
-    }
-    </div>
-  )
-}
+         <div className='flex w-full items-center justify-center p-4'>
+            <InitialForm />
+         </div>
+      ) : (
+        <DashboardOverView />
 
-export default page
+      )}
+
+      </div>
+    )
+}   
+
+export default Page
+
+
+

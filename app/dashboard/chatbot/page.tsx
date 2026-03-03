@@ -1,6 +1,9 @@
 "use client"
 
+import AppearanceConfig from "@/components/chatbot/AppearanceConfig";
 import ChatSimulator from "@/components/chatbot/ChatSimulator";
+import EmbedCodeConfig from "@/components/chatbot/EmbedCodeConfig";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useRef, useState } from "react";
 
 
@@ -46,7 +49,7 @@ useEffect(() => {
           );
           setMessages([{
             role: "assistant",
-            content: metaData.welcome_messages || metaData.welcome_message || "Hi! How can I help you today?",
+            content: metaData.welcome_messages || "Hi! How can I help you today?",
             isWelcome: true,
             section: null,
           }]);
@@ -248,6 +251,25 @@ useEffect(() => {
               handleReset={handleReset}
               scrollRef={scrollViewportRef} 
             />
+          </div>
+          <div className='lg:col-span-5 h-full min-h-0 overflow-hidden flex flex-col'>
+            <ScrollArea className='h-full pr-4'>
+              <div className='space-y-6 pb-8'>
+                <AppearanceConfig 
+                  primaryColor={primaryColor}
+                  setPrimaryColor={setPrimaryColor}
+                  welcomeMessage={welcomeMessage}
+                  setWelcomeMessage={setWelcomeMessage}
+                  handleSave={handleSave}
+                  isSaving={isSaving}
+                  hasChanges={hasChanges}
+                />
+                <EmbedCodeConfig chatbotId={metadata?.id} />
+
+              </div>
+
+            </ScrollArea>
+
           </div>
         </div>
     </div>
