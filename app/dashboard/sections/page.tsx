@@ -1,5 +1,6 @@
 'use client'
 import SectionFormFields from "@/components/sections/SectionFormFields"
+import SectionTable from "@/components/sections/SectionTable"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -11,18 +12,7 @@ type SectionStatus = "active" | "draft" | "disabled"
 type Tone = 'strict' | 'neutral' | 'friendly'| 'empathetic'
 
 
-interface Section{
-  id: string;
-  name: string;
-  description: string;
-  sourceCount: number;
-  source_ids?: string[]
-  tone:Tone;
-  scopeLabel: string;
-  allowed_topics?:string;
-  blocked_topics?:string;
-  status: SectionStatus;
-}
+
 
 interface KnowledgeSource{
   id: string;
@@ -40,12 +30,16 @@ const INITIAL_FORM_DATA:SectionFormData = {
   tone: 'neutral',
   allowedTopics:'',
   blockedTopics:"",
-  fallbackBehavior:''
+  fallbackBehavior: "escalate",
 }
 
 
 const page = () => {
 
+
+ useEffect(() => {
+        fetchSections();
+    }, [])
 
  const [isSheetOpen, setIsSheetOpen]=useState(false)
  const [selectedSection, setSelectedSection]=useState<Section | null>(null)
@@ -58,7 +52,7 @@ const page = () => {
 
  const [isLoadingSections, setIsLoadingSections]= useState(true)
  const [isLoadingSources, setIsLoadingSources]= useState(false)
- const [FormData, setFormData]= useState<SectionFormData>(INITIAL_FORM_DATA)
+ const [formData, setFormData]= useState<SectionFormData>(INITIAL_FORM_DATA)
 
 
 
@@ -95,7 +89,118 @@ const page = () => {
         setFormData(INITIAL_FORM_DATA);
         setIsSheetOpen(true);
     }
- const isPreviewMode = selectedSection?.id !== "new";
+
+
+
+ const fetchSections = async () => {
+        try {
+            setIsLoadingSections(true);
+            const response = await fetch("/api/sections/fetch");
+            const data = await response.json();
+ 
+            const transformedSections: Section[] = data.map((section: any) => ({
+                id: section.id,
+                name: section.name,
+                description: section.description,
+                sourceCount: section.source_ids?.length || 0,
+                source_ids: section.source_ids || [],
+                tone: section.tone as Tone,
+                scopeLabel: section.allowed_topics || "General",
+                allowed_topics: section.allowed_topics,
+                blocked_topics: section.blocked_topics,
+                status: section.status as SectionStatus,
+            }))
+            setSections(transformedSections);
+        } catch (error) {
+            console.error("Failed to fetch sections:", error);
+        }finally{
+            setIsLoadingSections(false);
+        }
+    }
+
+    const handleSaveSection = async () => {
+        if(!formData.name.trim() || !formData.description.trim()){
+            alert("Please enter a section name");
+            return;
+        }
+        if(!formData.description.trim()){
+            alert("Please enter a section description");
+            return;
+        }
+        if(selectedSources.length === 0){
+            alert("Please select at least one knowledge source");
+            return;
+        }
+
+        setIsSaving(true);
+        try{
+            const sectionData = {
+                ...formData,
+                sourceIDs: selectedSources,
+                status: "active",
+            };
+            const response = await fetch("/api/sections/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(sectionData),
+            });
+            if(!response.ok){
+                throw new Error("Failed to create section");
+            }
+            await fetchSections();
+            setIsSheetOpen(false);
+        }catch(error){
+            console.error("Error creating section:", error);
+        }finally{
+            setIsSaving(false);
+        }
+        
+        
+    };
+    const handleDeleteSection = async () => {
+        if(!selectedSection || selectedSection.id === "new") return;
+
+        if(!confirm(`Are you sure you want to delete "${selectedSection.name}"? This action cannot be undone.`)) return;
+
+        try {
+            setIsSaving(true);
+            const response = await fetch(`/api/sections/delete`,{
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({id: selectedSection.id}),
+            })
+            if(!response.ok){
+                throw new Error("Failed to delete section");
+            }
+            await fetchSections();
+            setIsSheetOpen(false);
+        } catch (error) {
+            console.error("Error deleting section:", error);
+        }finally{
+            setIsSaving(false);
+        }
+    }
+
+    const handlePreviewSection = (section: Section) => {
+        setSelectedSection(section);
+        setFormData({
+            name: section.name,
+            description: section.description,
+            tone: section.tone,
+            allowedTopics: section.allowed_topics || "",
+            blockedTopics: section.blocked_topics || "",
+            fallbackBehavior: "escalate",
+        });
+        setSelectedSources(section.source_ids || []);
+        setIsSheetOpen(true);
+    }
+
+const isPreviewMode = selectedSection?.id !== "new";
+
   return (
     <div className="p-8">
       <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4'>
@@ -116,8 +221,13 @@ const page = () => {
                 </div>
             </div>
         <Card>
-          <CardContent>
-
+          <CardContent className="p-0">
+            <SectionTable 
+                isLoading={isLoadingSections}
+                sections={sections}
+                onPreview={handlePreviewSection}
+                onCreateSection={handleCreateSection}
+                />
           </CardContent>
         </Card>
 
@@ -139,7 +249,7 @@ const page = () => {
               </SheetHeader>
                <div className='flex-1 overflow-y-auto px-6 py-0 space-y-8'>
                   <SectionFormFields 
-                            formData={FormData}
+                            formData={formData}
                             setFormData={setFormData}
                             selectedSources={selectedSources}
                             setSelectedSources={setSelectedSources}
